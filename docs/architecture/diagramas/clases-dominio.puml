@@ -1,0 +1,273 @@
+@startuml clases-dominio
+title Sazón Urbano - Diagrama de clases: capa de dominio (src/sazon_urbano/domain)
+
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassBorderColor #444444
+skinparam ArrowColor #555555
+skinparam defaultFontName Arial
+skinparam linetype ortho
+
+package "Dominio" #E1F5EE {
+
+  package "Aggregate Pedido" #FFFFFF {
+    class Pedido <<AggregateRoot>> {
+      +MONTO_MINIMO_DOMICILIO : Dinero  «RN-01»
+      +id
+      +canal : Canal
+      +responsable : Responsable  «RN-14»
+      +cliente : DatosCliente
+      +mesa
+      +estado : EstadoPedido
+      +promocion : PromocionAplicada
+      --
+      +{static} crear(id, canal, responsable, lineas, cliente, mesa)
+      +subtotal() : Dinero
+      +total() : Dinero
+      +confirmar()
+      +aplicar_promocion(promocion)
+      +cancelar(solicitante, motivo, autorizador)
+      +quitar_linea(linea_id, producto_agotado, responsable)
+      +iniciar_preparacion(estacion)
+      +marcar_listo()
+      +marcar_entregado()
+      +marcar_entrega_no_completada()
+      +preparacion_iniciada() : bool
+      +acciones_permitidas()
+      +recoger_eventos()
+    }
+    class LineaPedido <<Entidad>> {
+      +id
+      +cantidad
+      +modificaciones
+      +subtotal() : Dinero
+    }
+    class PreparacionEstacion <<Entidad>> {
+      +estacion : EstacionCocina
+      +estado : EstadoPreparacion
+    }
+    class Cancelacion <<ValueObject>> {
+      +tipo : TipoCancelacion
+      +motivo
+      +responsable : Responsable
+      +autorizado_por : Responsable
+      +fecha
+    }
+    class PromocionAplicada <<ValueObject>> {
+      +promocion_id
+      +descripcion
+      +descuento : Dinero
+    }
+    class ProductoPedido <<ValueObject>> {
+      +producto_id
+      +nombre
+      +precio_unitario : Dinero
+    }
+  }
+
+  package "Aggregate Promoción" #FFFFFF {
+    class Promocion <<AggregateRoot>> {
+      +id
+      +nombre
+      +productos_ids
+      +porcentaje_descuento
+      +esta_vigente_en(fecha_hora)
+      +aplica_a(pedido)
+      +calcular_descuento(pedido) : Dinero
+    }
+    class Vigencia <<ValueObject>> {
+      +dias
+      +hora_inicio
+      +hora_fin
+      +incluye(fecha_hora)
+    }
+  }
+
+  package "Aggregates Entrega y Repartidor" #FFFFFF {
+    class Entrega <<AggregateRoot>> {
+      +id
+      +pedido_id
+      +repartidor_id
+      +estado : EstadoEntrega
+      +hora_salida
+      +hora_entrega
+      +motivo_falla
+      +{static} asignar(id, pedido_id, repartidor_id)
+      +registrar_salida(hora)
+      +confirmar(hora)
+      +fallar(motivo, hora)
+      +recoger_eventos()
+    }
+    class Repartidor <<AggregateRoot>> {
+      +id
+      +nombre
+      +disponible
+      +asignar()
+      +liberar()
+    }
+  }
+
+  class Merma <<AggregateRoot>> {
+    +id
+    +pedido_id
+    +motivo
+    +responsable : Responsable
+    +fecha
+    +{static} desde_cancelacion(id, pedido_id, cancelacion)
+  }
+
+  package "Value Objects y enumeraciones compartidos" #FFFFFF {
+    class Dinero <<ValueObject>> {
+      +monto : Decimal
+      +moneda = "MXN"
+      +{static} mxn(valor)
+      +{static} cero()
+      +por(cantidad)
+      +porcentaje(porcentaje)
+    }
+    class Responsable <<ValueObject>> {
+      +usuario_id
+      +rol : Rol
+    }
+    class DatosCliente <<ValueObject>> {
+      +nombre
+      +telefono
+      +direccion
+    }
+    enum Canal {
+      MESA
+      TELEFONO_WHATSAPP
+      DOMICILIO
+    }
+    enum EstacionCocina {
+      PARRILLA
+      FRIA
+      BEBIDAS
+      EMPAQUE
+    }
+    enum Rol {
+      MESERO
+      CAJA
+      COCINA
+      ENCARGADO
+      REPARTIDOR
+      GERENTE
+      CLIENTE
+    }
+    enum TipoCancelacion {
+      TOTAL
+      PARCIAL
+    }
+    enum EstadoPreparacion {
+      PENDIENTE
+      EN_PREPARACION
+      TERMINADA
+    }
+    enum EstadoEntrega {
+      ASIGNADA
+      EN_RUTA
+      ENTREGADA
+      FALLIDA
+    }
+  }
+
+  package "Domain Services" #FFFFFF {
+    class AplicadorDePromocion <<DomainService>> {
+      +aplicar(pedido, promocion, fecha_hora)
+    }
+    class AsignadorDeRepartidor <<DomainService>> {
+      +asignar(entrega_id, pedido_id, repartidor) : Entrega
+    }
+  }
+
+  package "Puertos de persistencia (interfaces)" #FFFFFF {
+    interface PedidoRepository <<ABC>> {
+      +obtener_por_id(pedido_id)
+      +guardar(pedido)
+    }
+    interface PromocionRepository <<ABC>> {
+      +obtener_por_id(promocion_id)
+    }
+    interface EntregaRepository <<ABC>> {
+      +obtener_por_id(entrega_id)
+      +guardar(entrega)
+    }
+    interface RepartidorRepository <<ABC>> {
+      +obtener_por_id(repartidor_id)
+      +guardar(repartidor)
+    }
+    interface MermaRepository <<ABC>> {
+      +guardar(merma)
+    }
+    interface DisponibilidadRepository <<ABC>> {
+      +marcar_agotado(producto_id, responsable, fecha_hora)
+    }
+    interface UnitOfWork <<ABC>> {
+      +iniciar()
+      +confirmar()
+      +deshacer()
+    }
+  }
+
+  abstract class ErrorDeNegocio <<Exception>>
+  note right of ErrorDeNegocio
+    27 errores de negocio heredan de esta clase
+    (MontoMinimoDomicilioNoAlcanzado,
+    CancelacionRequiereAutorizacion,
+    TransicionDeEstadoInvalida, ...).
+    La API los traduce a 403/404/409/422.
+  end note
+}
+
+' --- Composición dentro de los aggregates ---
+Pedido "1" *-- "1..*" LineaPedido : contiene
+Pedido "1" *-- "0..*" PreparacionEstacion : preparaciones
+Pedido "1" *-- "0..*" Cancelacion : cancelaciones
+Pedido "1" o-- "0..1" PromocionAplicada : promocion
+LineaPedido --> ProductoPedido
+Promocion "1" *-- "1" Vigencia
+
+' --- Uso de Value Objects ---
+Pedido --> Canal
+Pedido --> Responsable
+Pedido --> DatosCliente
+Pedido --> Dinero : total
+LineaPedido --> EstacionCocina
+PreparacionEstacion --> EstacionCocina
+PreparacionEstacion --> EstadoPreparacion
+ProductoPedido --> Dinero
+PromocionAplicada --> Dinero
+Cancelacion --> TipoCancelacion
+Cancelacion --> Responsable
+Responsable --> Rol
+Entrega --> EstadoEntrega
+Merma --> Responsable
+
+' --- Los aggregates solo se conocen por ID ---
+Entrega ..> Pedido : pedido_id
+Entrega ..> Repartidor : repartidor_id
+Merma ..> Pedido : pedido_id
+Pedido ..> Promocion : promocion_id
+
+' --- Domain services ---
+AplicadorDePromocion ..> Pedido
+AplicadorDePromocion ..> Promocion
+AsignadorDeRepartidor ..> Entrega
+AsignadorDeRepartidor ..> Repartidor
+Merma ..> Cancelacion : desde_cancelacion
+
+' --- Repositorios ---
+PedidoRepository ..> Pedido : gestiona
+PromocionRepository ..> Promocion : gestiona
+EntregaRepository ..> Entrega : gestiona
+RepartidorRepository ..> Repartidor : gestiona
+MermaRepository ..> Merma : gestiona
+
+note bottom of Pedido
+  Las condiciones combinables (Specification) y la tabla de
+  transiciones (MaquinaDeEstados) están en clases-specifications.puml
+end note
+
+@enduml

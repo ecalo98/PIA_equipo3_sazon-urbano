@@ -1,0 +1,7 @@
+platillo_id,nombre,precio_mxn,estacion,stock,habilitado
+taco-pastor,Tacos al pastor (orden),90.00,parrilla,60,1
+hamburguesa-clasica,Hamburguesa clásica,145.00,parrilla,40,1
+ensalada-casa,Ensalada de la casa,95.00,fria,30,1
+refresco,Refresco,30.00,bebidas,100,1
+agua,Agua fresca,20.00,bebidas,100,1
+postre-flan,Flan napolitano,55.00,fria,0,1

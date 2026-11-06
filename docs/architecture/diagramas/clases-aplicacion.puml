@@ -1,0 +1,161 @@
+@startuml clases-aplicacion
+title Sazón Urbano - Diagrama de clases: capa de aplicación (Service Layer + Commands/Handlers)
+
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassBorderColor #444444
+skinparam ArrowColor #555555
+skinparam defaultFontName Arial
+skinparam nodesep 20
+skinparam ranksep 45
+
+package "Aplicación (application/)" #E6F1FB {
+
+  package "Application Services: un método por caso de uso" #FFFFFF {
+    class PedidoApplicationService <<ApplicationService>> {
+      +registrar_pedido(cmd)  «CU-01»
+      +aplicar_promocion(cmd)  «CU-02»
+      +cancelar_pedido(cmd)  «CU-03»
+    }
+    class DisponibilidadApplicationService <<ApplicationService>> {
+      +gestionar_producto_agotado(solicitud)  «CU-04»
+    }
+    class EntregaApplicationService <<ApplicationService>> {
+      +gestionar_entrega(solicitud)  «CU-05»
+    }
+    class PreparacionApplicationService <<ApplicationService>> {
+      +gestionar_preparacion(solicitud)
+    }
+  }
+
+  package "Command Handlers (uno por Command)" #FFFFFF {
+    class RegistrarPedidoHandler <<CommandHandler>> {
+      +manejar(cmd)
+    }
+    class AplicarPromocionHandler <<CommandHandler>> {
+      +manejar(cmd)
+    }
+    class CancelarPedidoHandler <<CommandHandler>> {
+      +manejar(cmd)
+    }
+    class MarcarProductoAgotadoHandler <<CommandHandler>> {
+      +manejar(cmd)  «Transaction Script»
+    }
+    class QuitarLineaAgotadaHandler <<CommandHandler>> {
+      +manejar(cmd)
+    }
+    class AsignarRepartidorHandler <<CommandHandler>> {
+      +manejar(cmd)
+    }
+    class RegistrarSalidaHandler <<CommandHandler>> {
+      +manejar(cmd)
+    }
+    class ConfirmarEntregaHandler <<CommandHandler>> {
+      +manejar(cmd)
+    }
+    class RegistrarEntregaFallidaHandler <<CommandHandler>> {
+      +manejar(cmd)
+    }
+    class IniciarPreparacionHandler <<CommandHandler>> {
+      +manejar(cmd)
+    }
+    class MarcarPedidoListoHandler <<CommandHandler>> {
+      +manejar(cmd)
+    }
+    class "_CierreDeEntregaHandler" as Cierre <<base>> {
+      #_cerrar(cmd, accion_entrega, accion_pedido)
+    }
+  }
+
+  package "Commands (comandos): datos de entrada" #FFFFFF {
+    class Commands <<dataclasses>> {
+      RegistrarPedido, AplicarPromocion, CancelarPedido,
+      MarcarProductoAgotado, QuitarLineaAgotada,
+      AsignarRepartidor, RegistrarSalidaDeEntrega,
+      ConfirmarEntrega, RegistrarEntregaFallida,
+      IniciarPreparacion, MarcarPedidoListo
+    }
+  }
+
+  package "Puertos (interfaces que implementa infraestructura)" #FFFFFF {
+    interface ControlDeAcceso <<ABC>> {
+      +verificar_permiso(responsable, accion)
+    }
+    interface PublicadorDeEventos <<ABC>> {
+      +publicar(eventos)
+    }
+    interface Notificador <<ABC>> {
+      +avisar(destinatarios, mensaje)
+    }
+    interface ConsultasDeDisponibilidad <<ABC>> {
+      +esta_agotado(producto_id)
+    }
+    enum Accion {
+      REGISTRAR_PEDIDO_MESA / REMOTO
+      APLICAR_PROMOCION
+      SOLICITAR / AUTORIZAR_CANCELACION
+      MARCAR_AGOTADO
+      QUITAR_LINEA_AGOTADA
+      ASIGNAR_REPARTIDOR
+      REGISTRAR_ENTREGA
+      INICIAR_PREPARACION
+      MARCAR_LISTO
+    }
+  }
+}
+
+package "Dominio (interfaces y aggregates que usan los handlers)" #E1F5EE {
+  interface "Repository (6 interfaces)" as Repos <<ABC>>
+  interface UnitOfWork <<ABC>>
+  class "Aggregates: Pedido, Entrega,\nPromocion, Repartidor, Merma" as Aggs <<AggregateRoot>>
+  class "AplicadorDePromocion\nAsignadorDeRepartidor" as DS <<DomainService>>
+}
+
+' --- Services: verifican permiso y delegan ---
+PedidoApplicationService ..> ControlDeAcceso
+DisponibilidadApplicationService ..> ControlDeAcceso
+EntregaApplicationService ..> ControlDeAcceso
+PreparacionApplicationService ..> ControlDeAcceso
+ControlDeAcceso ..> Accion
+
+PedidoApplicationService ..> RegistrarPedidoHandler : delega
+PedidoApplicationService ..> AplicarPromocionHandler : delega
+PedidoApplicationService ..> CancelarPedidoHandler : delega
+DisponibilidadApplicationService ..> MarcarProductoAgotadoHandler : delega
+DisponibilidadApplicationService ..> QuitarLineaAgotadaHandler : delega
+EntregaApplicationService ..> AsignarRepartidorHandler : delega
+EntregaApplicationService ..> RegistrarSalidaHandler : delega
+EntregaApplicationService ..> ConfirmarEntregaHandler : delega
+EntregaApplicationService ..> RegistrarEntregaFallidaHandler : delega
+PreparacionApplicationService ..> IniciarPreparacionHandler : delega
+PreparacionApplicationService ..> MarcarPedidoListoHandler : delega
+
+Cierre <|-- ConfirmarEntregaHandler
+Cierre <|-- RegistrarEntregaFallidaHandler
+
+' --- Dependencias de los handlers (agrupadas) ---
+Commands ..> RegistrarPedidoHandler : entrada de cada handler
+MarcarProductoAgotadoHandler ..> Notificador : avisa a mesero y caja
+QuitarLineaAgotadaHandler ..> ConsultasDeDisponibilidad
+RegistrarPedidoHandler ..> PublicadorDeEventos : después de confirmar
+CancelarPedidoHandler ..> PublicadorDeEventos
+AplicarPromocionHandler ..> DS
+AsignarRepartidorHandler ..> DS
+RegistrarPedidoHandler ..> Repos
+CancelarPedidoHandler ..> Repos
+RegistrarPedidoHandler ..> UnitOfWork
+CancelarPedidoHandler ..> UnitOfWork
+CancelarPedidoHandler ..> Aggs : Pedido.cancelar() + Merma
+ConfirmarEntregaHandler ..> Aggs
+
+note bottom of Cierre
+  Todos los handlers de escritura abren una Unit of Work,
+  piden los aggregates a sus Repository, dejan que el dominio
+  aplique las reglas, guardan, confirman y solo entonces
+  publican los eventos. Se dibujan arriba solo los más
+  representativos para mantener el diagrama legible.
+end note
+
+@enduml

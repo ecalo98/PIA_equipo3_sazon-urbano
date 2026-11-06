@@ -1,0 +1,130 @@
+@startuml clases
+title Sazón Urbano - Diagrama de clases general (vista por capas)
+
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassBorderColor #444444
+skinparam ArrowColor #555555
+skinparam defaultFontName Arial
+
+note as N1
+  Vista general: solo las clases principales de cada capa.
+  El detalle está en: clases-dominio.puml, clases-specifications.puml,
+  clases-aplicacion.puml y clases-infraestructura.puml.
+  Las flechas de dependencia apuntan hacia las interfaces, nunca hacia las implementaciones.
+end note
+
+package "API REST (api/)" #F3E8FF {
+  class "Rutas FastAPI\n(17 endpoints)" as Rutas <<controllers>>
+  class "Esquemas Pydantic" as Esq <<DTO HTTP>>
+  class "Traductor de errores\n(400/403/404/409/422/500)" as Err <<manejadores>>
+}
+
+package "Aplicación (application/)" #E6F1FB {
+  class PedidoApplicationService <<ApplicationService>>
+  class DisponibilidadApplicationService <<ApplicationService>>
+  class EntregaApplicationService <<ApplicationService>>
+  class PreparacionApplicationService <<ApplicationService>>
+  class "Command Handlers (11)" as CH <<CQRS escritura>>
+  class "Query Handlers (4) + DTO" as QH <<CQRS lectura>>
+  interface ControlDeAcceso <<puerto>>
+  interface PublicadorDeEventos <<puerto>>
+  interface Notificador <<puerto>>
+  interface "Consultas de lectura\n(ConsultasDe...)" as CL <<puerto>>
+}
+
+package "Dominio (domain/)" #E1F5EE {
+  class Pedido <<AggregateRoot>>
+  class Promocion <<AggregateRoot>>
+  class Entrega <<AggregateRoot>>
+  class Repartidor <<AggregateRoot>>
+  class Merma <<AggregateRoot>>
+  class "Value Objects\n(Dinero, Canal, Responsable, ...)" as VO <<ValueObject>>
+  class AplicadorDePromocion <<DomainService>>
+  class AsignadorDeRepartidor <<DomainService>>
+  abstract class Specification <<patrón>>
+  class MaquinaDeEstados <<patrón>>
+  class "Domain Events (14)" as EV <<eventos>>
+  interface "Repository (6)" as Repo <<puerto>>
+  interface UnitOfWork <<puerto>>
+}
+
+package "Infraestructura (infrastructure/)" #FAEEDA {
+  class "Repositorios en memoria" as RepoMem <<implementación>>
+  class "Repositorios SQL\n(SQLAlchemy / PostgreSQL)" as RepoSql <<implementación>>
+  class UnitOfWorkSql <<implementación>>
+  class UnitOfWorkEnMemoria <<implementación>>
+  class "Consultas SQL (lectura)" as CSql <<implementación>>
+  class ControlDeAccesoPorRol <<implementación>>
+  class "Publicador y Notificador\nen memoria" as PubMem <<implementación>>
+  class "composicion.py\n(raíz de composición)" as Comp <<ensamblaje>>
+  class PaquetePia <<CSV del PIA>>
+}
+
+' --- API -> aplicación ---
+Rutas ..> Esq
+Rutas ..> Err
+Rutas ..> PedidoApplicationService
+Rutas ..> DisponibilidadApplicationService
+Rutas ..> EntregaApplicationService
+Rutas ..> PreparacionApplicationService
+Rutas ..> QH
+Rutas ..> Comp : Depends
+
+' --- Aplicación ---
+PedidoApplicationService ..> ControlDeAcceso
+DisponibilidadApplicationService ..> ControlDeAcceso
+EntregaApplicationService ..> ControlDeAcceso
+PreparacionApplicationService ..> ControlDeAcceso
+PedidoApplicationService ..> CH : delega
+DisponibilidadApplicationService ..> CH : delega
+EntregaApplicationService ..> CH : delega
+PreparacionApplicationService ..> CH : delega
+CH ..> Pedido
+CH ..> Entrega
+CH ..> AplicadorDePromocion
+CH ..> AsignadorDeRepartidor
+CH ..> Repo
+CH ..> UnitOfWork
+CH ..> PublicadorDeEventos
+CH ..> Notificador
+QH ..> CL
+
+' --- Dominio ---
+Pedido "1" *-- "1..*" VO
+Pedido ..> MaquinaDeEstados : consulta transiciones
+Pedido ..> Specification : RN-01 (MontoMinimoDomicilio)
+Pedido ..> EV : emite
+Entrega ..> EV : emite
+Entrega ..> Pedido : por ID
+Entrega ..> Repartidor : por ID
+Merma ..> Pedido : por ID
+Pedido ..> Promocion : por ID
+AplicadorDePromocion ..> Pedido
+AplicadorDePromocion ..> Promocion
+AsignadorDeRepartidor ..> Entrega
+AsignadorDeRepartidor ..> Repartidor
+Repo ..> Pedido : gestiona
+Repo ..> Promocion : gestiona
+Repo ..> Entrega : gestiona
+Repo ..> Repartidor : gestiona
+Repo ..> Merma : gestiona
+
+' --- Infraestructura implementa interfaces ---
+Repo <|.. RepoMem
+Repo <|.. RepoSql
+UnitOfWork <|.. UnitOfWorkSql
+UnitOfWork <|.. UnitOfWorkEnMemoria
+CL <|.. CSql
+ControlDeAcceso <|.. ControlDeAccesoPorRol
+PublicadorDeEventos <|.. PubMem
+Notificador <|.. PubMem
+Comp ..> RepoMem : arma (pruebas)
+Comp ..> RepoSql : arma (producción)
+Comp ..> PedidoApplicationService : ensambla
+Rutas ..> PaquetePia : GET /operaciones/{id}/evaluacion
+PaquetePia ..> Specification : evalúa
+
+@enduml

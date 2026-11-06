@@ -1,0 +1,56 @@
+........................................................................ [ 46%]
+..................ssssssssss............................................ [ 92%]
+...........                                                              [100%]
+=============================== warnings summary ===============================
+../../../../usr/local/lib/python3.12/dist-packages/fastapi/testclient.py:1
+  /usr/local/lib/python3.12/dist-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.12.3-final-0 ________________
+
+Name                                                              Stmts   Miss Branch BrPart  Cover   Missing
+-------------------------------------------------------------------------------------------------------------
+src/sazon_urbano/api/dependencias.py                                 32      0      2      0   100%
+src/sazon_urbano/api/errores.py                                      38      0      6      0   100%
+src/sazon_urbano/api/esquemas.py                                     90      0      0      0   100%
+src/sazon_urbano/api/main.py                                         25      0      4      0   100%
+src/sazon_urbano/api/rutas.py                                        78      0      2      0   100%
+src/sazon_urbano/application/aprobacion.py                           10      0      2      0   100%
+src/sazon_urbano/application/catalogo.py                             20      0      6      0   100%
+src/sazon_urbano/application/comandos.py                             72      0      0      0   100%
+src/sazon_urbano/application/consultas.py                            66      0      0      0   100%
+src/sazon_urbano/application/handlers.py                            172      0      2      0   100%
+src/sazon_urbano/application/puertos.py                              31      0      0      0   100%
+src/sazon_urbano/application/servicios.py                            44      0      2      0   100%
+src/sazon_urbano/domain/entrega.py                                   49      0      8      0   100%
+src/sazon_urbano/domain/errores.py                                   52      0      0      0   100%
+src/sazon_urbano/domain/evaluacion.py                                13      0      0      0   100%
+src/sazon_urbano/domain/eventos.py                                   54      0      0      0   100%
+src/sazon_urbano/domain/maquina_estados.py                           29      0      6      0   100%
+src/sazon_urbano/domain/merma.py                                     15      0      0      0   100%
+src/sazon_urbano/domain/pedido.py                                   144      0     30      0   100%
+src/sazon_urbano/domain/promocion.py                                 21      0      4      0   100%
+src/sazon_urbano/domain/repartidor.py                                12      0      2      0   100%
+src/sazon_urbano/domain/repositorios.py                              16      0      0      0   100%
+src/sazon_urbano/domain/servicios.py                                 20      0      4      0   100%
+src/sazon_urbano/domain/specifications.py                            89      3      2      0    97%   95, 146, 160
+src/sazon_urbano/domain/valores.py                                   79      0      2      0   100%
+src/sazon_urbano/infrastructure/composicion.py                       35      0      0      0   100%
+src/sazon_urbano/infrastructure/memoria.py                           62      0      8      1    99%   96->100
+src/sazon_urbano/infrastructure/paquete_pia.py                       28      0      4      0   100%
+src/sazon_urbano/infrastructure/persistence/base_datos.py            33      0     10      1    98%   30->32
+src/sazon_urbano/infrastructure/persistence/consultas_sql.py         58      0      8      0   100%
+src/sazon_urbano/infrastructure/persistence/mapeo.py                 70      1      4      0    99%   131
+src/sazon_urbano/infrastructure/persistence/modelos.py               97      0      0      0   100%
+src/sazon_urbano/infrastructure/persistence/repositorios_sql.py      52      0      2      0   100%
+src/sazon_urbano/infrastructure/persistence/semilla.py               36      0     10      0   100%
+src/sazon_urbano/infrastructure/persistence/unit_of_work_sql.py      11      0      0      0   100%
+-------------------------------------------------------------------------------------------------------------
+TOTAL                                                              1753      4    130      2    99%
+
+6 empty files skipped.
+Required test coverage of 80.0% reached. Total coverage: 99.68%
+=========================== short test summary info ============================
+145 passed, 10 skipped, 1 warning in 8.59s

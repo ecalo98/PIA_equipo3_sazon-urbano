@@ -1,0 +1,87 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  pruebas:
+    name: Pruebas y cobertura (PostgreSQL)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: sazon
+          POSTGRES_PASSWORD: sazon_ci          # credencial desechable solo para el CI; no es un secreto real
+          POSTGRES_DB: sazon_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sazon -d sazon_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Con esta variable se ejecutan también las 10 pruebas de persistencia contra PostgreSQL (si no, se omiten).
+      TEST_DATABASE_URL: postgresql+psycopg://sazon:sazon_ci@localhost:5432/sazon_test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements*.txt
+
+      - name: Instalar dependencias
+        run: pip install -r requirements-dev.txt
+
+      - name: Pruebas unitarias e integración con cobertura (falla si es < 80 %)
+        run: pytest --cov --cov-report=term-missing --cov-report=xml --cov-report=html -ra | tee pytest.log
+
+      - name: Verificar que no se omitió ninguna prueba (las 10 de PostgreSQL deben correr)
+        run: |
+          if grep -q "^SKIPPED" pytest.log; then
+            echo "Hay pruebas omitidas: revisar TEST_DATABASE_URL / servicio PostgreSQL"
+            exit 1
+          fi
+
+      - name: Guardar reporte de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cobertura
+          path: |
+            coverage.xml
+            htmlcov/
+
+  contenedor:
+    name: Construir imagen Docker
+    needs: pruebas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construir imagen (solo si el repositorio ya tiene Dockerfile)
+        if: ${{ hashFiles('Dockerfile') != '' }}
+        run: docker build -t sazon-urbano:${{ github.sha }} .
+
+  despliegue:
+    name: Despliegue (CD)
+    needs: [pruebas, contenedor]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_HOOK_URL: ${{ secrets.DEPLOY_HOOK_URL }}
+    steps:
+      - name: Disparar el despliegue en la plataforma elegida (Render/Railway/Fly.io)
+        if: ${{ env.DEPLOY_HOOK_URL != '' }}
+        run: curl --fail --silent --show-error -X POST "$DEPLOY_HOOK_URL"
+      - name: Sin hook configurado
+        if: ${{ env.DEPLOY_HOOK_URL == '' }}
+        run: echo "DEPLOY_HOOK_URL no está definido; la plataforma puede desplegar por su cuenta desde GitHub."

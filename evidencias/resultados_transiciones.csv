@@ -1,0 +1,21 @@
+﻿caso_id,operacion_id,accion,estado_inicial,estado_final,resultado,eventos,excepcion
+PED-S001,PED-O001,completar,CREADO,CREADO,RECHAZADA,,"TransicionDeEstadoInvalida: No se puede 'entregar' desde 'creado'. Acciones permitidas: aceptar, cancelar"
+PED-S002,PED-O002,cancelar,CREADO,CANCELADO,EJECUTADA,PedidoCancelado,
+PED-S003,PED-O003,repetir_aprobacion,CREADO,ACEPTADO,RECHAZADA,PedidoConfirmado,"TransicionDeEstadoInvalida: No se puede 'aceptar' desde 'aceptado'. Acciones permitidas: iniciar_preparacion, cancelar"
+PED-S004,PED-O004,saltar_estado,CREADO,CREADO,RECHAZADA,,"TransicionDeEstadoInvalida: No se puede 'iniciar_preparacion' desde 'creado'. Acciones permitidas: aceptar, cancelar"
+PED-S005,PED-O005,aprobar,CREADO,ACEPTADO,EJECUTADA,PedidoConfirmado,
+PED-S006,PED-O006,completar,CREADO,CREADO,RECHAZADA,,"TransicionDeEstadoInvalida: No se puede 'entregar' desde 'creado'. Acciones permitidas: aceptar, cancelar"
+PED-S007,PED-O007,cancelar,CREADO,CANCELADO,EJECUTADA,PedidoCancelado,
+PED-S008,PED-O008,repetir_aprobacion,CREADO,CREADO,RECHAZADA,,OperacionNoProcesable: No cumple: autorización registrada
+PED-S009,PED-O009,saltar_estado,CREADO,CREADO,RECHAZADA,,"TransicionDeEstadoInvalida: No se puede 'iniciar_preparacion' desde 'creado'. Acciones permitidas: aceptar, cancelar"
+PED-S010,PED-O010,aprobar,CREADO,ACEPTADO,EJECUTADA,PedidoConfirmado,
+PED-S011,PED-O011,completar,CREADO,CREADO,RECHAZADA,,"TransicionDeEstadoInvalida: No se puede 'entregar' desde 'creado'. Acciones permitidas: aceptar, cancelar"
+PED-S012,PED-O012,cancelar,CREADO,CANCELADO,EJECUTADA,PedidoCancelado,
+PED-S013,PED-O013,repetir_aprobacion,CREADO,CREADO,RECHAZADA,,OperacionNoProcesable: No cumple: al menos una línea de detalle
+PED-S014,PED-O014,saltar_estado,CREADO,CREADO,RECHAZADA,,"TransicionDeEstadoInvalida: No se puede 'iniciar_preparacion' desde 'creado'. Acciones permitidas: aceptar, cancelar"
+PED-S015,PED-O015,aprobar,CREADO,ACEPTADO,EJECUTADA,PedidoConfirmado,
+PED-S016,PED-O016,completar,CREADO,CREADO,RECHAZADA,,"TransicionDeEstadoInvalida: No se puede 'entregar' desde 'creado'. Acciones permitidas: aceptar, cancelar"
+PED-S017,PED-O017,cancelar,CREADO,CANCELADO,EJECUTADA,PedidoCancelado,
+PED-S018,PED-O018,repetir_aprobacion,CREADO,ACEPTADO,RECHAZADA,PedidoConfirmado,"TransicionDeEstadoInvalida: No se puede 'aceptar' desde 'aceptado'. Acciones permitidas: iniciar_preparacion, cancelar"
+PED-S019,PED-O019,saltar_estado,CREADO,CREADO,RECHAZADA,,"TransicionDeEstadoInvalida: No se puede 'iniciar_preparacion' desde 'creado'. Acciones permitidas: aceptar, cancelar"
+PED-S020,PED-O020,aprobar,CREADO,ACEPTADO,EJECUTADA,PedidoConfirmado,

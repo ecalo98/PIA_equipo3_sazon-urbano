@@ -1,0 +1,17 @@
+@startuml estados-pedido
+title Máquina de estados: pedido
+skinparam shadowing false
+[*] --> CREADO
+CREADO --> ACEPTADO : aceptar
+CREADO --> CANCELADO : cancelar
+ACEPTADO --> EN_PREPARACION : iniciar_preparacion
+ACEPTADO --> CANCELADO : cancelar
+EN_PREPARACION --> LISTO : marcar_listo
+EN_PREPARACION --> CANCELADO : cancelar
+LISTO --> ENTREGADO : entregar
+LISTO --> ENTREGA_NO_COMPLETADA : fallar_entrega
+LISTO --> CANCELADO : cancelar
+CANCELADO --> [*]
+ENTREGADO --> [*]
+ENTREGA_NO_COMPLETADA --> [*]
+@enduml

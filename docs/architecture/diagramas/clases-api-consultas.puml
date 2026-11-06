@@ -1,0 +1,133 @@
+@startuml clases-api-consultas
+title Sazón Urbano - Diagrama de clases: API REST y lado de lectura (Queries y DTO)
+
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassBorderColor #444444
+skinparam ArrowColor #555555
+skinparam defaultFontName Arial
+skinparam nodesep 25
+skinparam ranksep 45
+
+package "API REST (api/)" #F3E8FF {
+  class "Main: crear_app()" as Main <<FastAPI>> {
+    +Swagger UI en /docs
+    +OpenAPI en /openapi.json
+  }
+  class "Rutas (APIRouter)" as Rutas <<controllers>> {
+    +POST /pedidos
+    +GET /pedidos/{id}
+    +POST /pedidos/{id}/promocion
+    +POST /pedidos/{id}/cancelacion
+    +DELETE /pedidos/{id}/lineas/{linea}
+    +POST /pedidos/{id}/preparacion
+    +POST /pedidos/{id}/listo
+    +POST /productos/{id}/agotado
+    +POST /entregas
+    +POST /entregas/{id}/salida
+    +POST /entregas/{id}/confirmacion
+    +POST /entregas/{id}/fallida
+    +GET /menu
+    +GET /promociones/vigentes
+    +GET /repartidores/disponibles
+    +GET /operaciones/{id}/evaluacion
+    +GET /salud
+  }
+  class Contexto <<inyección de dependencias>> {
+    +app : Aplicacion
+    +catalogo
+    +resumen
+    +menu
+    +promociones
+    +repartidores
+  }
+  class "Esquemas Pydantic" as Esquemas <<DTO HTTP>> {
+    RegistrarPedidoIn, AplicarPromocionIn, CancelarIn,
+    AsignarRepartidorIn, EntregaFallidaIn, ...
+    ResultadoPedidoOut, ResumenPedidoOut, ErrorOut, ...
+  }
+  class "Traductor de errores" as Errores <<manejadores>> {
+    +registrar_manejadores(app)
+    +codigo_para(error) : 400 / 403 / 404 / 409 / 422 / 500
+  }
+}
+
+package "Aplicación: Application Services (resumen)" #E6F1FB {
+  class "PedidoApplicationService\nDisponibilidadApplicationService\nEntregaApplicationService\nPreparacionApplicationService" as Servicios <<ApplicationService>>
+  class "aprobar_operacion()" as Aprobar <<función>>
+  class "lineas_desde_catalogo()" as LineasCat <<función>>
+}
+
+package "Aplicación: consultas (CQRS, solo lectura)" #E6F1FB {
+  class ConsultarResumenDelPedidoHandler <<QueryHandler>> {
+    +manejar(pedido_id)
+  }
+  class ConsultarMenuDisponibleHandler <<QueryHandler>> {
+    +manejar()
+  }
+  class ConsultarPromocionesVigentesHandler <<QueryHandler>> {
+    +manejar(fecha_hora)
+  }
+  class ConsultarRepartidoresDisponiblesHandler <<QueryHandler>> {
+    +manejar()
+  }
+  interface ConsultasDePedidos <<ABC>> {
+    +resumen(pedido_id)
+  }
+  interface ConsultasDeMenu <<ABC>> {
+    +menu_disponible()
+  }
+  interface ConsultasDePromociones <<ABC>> {
+    +vigentes_en(fecha_hora)
+  }
+  interface ConsultasDeRepartidores <<ABC>> {
+    +disponibles()
+  }
+  interface CatalogoDePlatillos <<ABC>> {
+    +obtener(platillo_id)
+    +listar()
+  }
+  class "DTO de lectura (dataclasses)" as Dtos <<DTO>> {
+    ResumenDePedidoDto, LineaDto,
+    ProductoDisponibleDto,
+    PromocionVigenteDto,
+    RepartidorDisponibleDto
+  }
+}
+
+class "Specification puede_procesarse()" as Spec <<dominio>>
+
+Main ..> Rutas : incluye router
+Main ..> Errores
+Rutas ..> Esquemas : entrada y salida HTTP
+Rutas ..> Contexto : Depends(contexto)
+Rutas ..> Servicios : comandos (escritura)
+Rutas ..> LineasCat : precio desde el catálogo
+Rutas ..> Aprobar : GET /operaciones/{id}/evaluacion
+Aprobar ..> Spec
+Contexto ..> Servicios
+Contexto ..> CatalogoDePlatillos
+
+Rutas ..> ConsultarResumenDelPedidoHandler : lectura
+Rutas ..> ConsultarMenuDisponibleHandler : lectura
+Rutas ..> ConsultarPromocionesVigentesHandler : lectura
+Rutas ..> ConsultarRepartidoresDisponiblesHandler : lectura
+
+ConsultarResumenDelPedidoHandler ..> ConsultasDePedidos
+ConsultarMenuDisponibleHandler ..> ConsultasDeMenu
+ConsultarPromocionesVigentesHandler ..> ConsultasDePromociones
+ConsultarRepartidoresDisponiblesHandler ..> ConsultasDeRepartidores
+ConsultasDePedidos ..> Dtos : devuelve
+ConsultasDeMenu ..> Dtos : devuelve
+ConsultasDePromociones ..> Dtos : devuelve
+ConsultasDeRepartidores ..> Dtos : devuelve
+LineasCat ..> CatalogoDePlatillos
+
+note bottom of Dtos
+  Las consultas dependen de interfaces de lectura (ConsultasDe...),
+  no de los repositorios, y devuelven DTO: nunca el aggregate (ADR-03).
+end note
+
+@enduml

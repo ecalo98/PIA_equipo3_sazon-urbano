@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.venv/
+.idea/
+.vscode/
+
+# Secretos y entorno
+.env
+
+# Pruebas y cobertura
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Base de datos local de desarrollo
+*.db

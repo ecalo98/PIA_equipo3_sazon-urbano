@@ -1,0 +1,2045 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Sazón Urbano API",
+    "description": "\nAPI de **Sazón Urbano**: pedidos por mesa, teléfono/WhatsApp y domicilio.\n\n**Autenticación simulada:** cada solicitud que cambia datos envía `X-Usuario-Id` y `X-Rol`\n(mesero, caja, cocina, encargado, repartidor, gerente). El permiso por rol lo valida la capa de aplicación (US-19).\n\n**Códigos:** 200/201 éxito · 400 solicitud mal formada · 401 sin identificar · 403 sin permiso ·\n404 no existe · 409 conflicto de estado · 422 regla de negocio incumplida.\n",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/pedidos": {
+      "post": {
+        "tags": [
+          "Pedidos"
+        ],
+        "summary": "Registrar un pedido (CU-01)",
+        "description": "Precio y estación los toma el sistema del catálogo. Aplica RN-01 (mínimo a domicilio) y RN-14.",
+        "operationId": "registrar_pedido_pedidos_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrarPedidoIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadoPedidoOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud mal formada o rol no reconocido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identificar al usuario (X-Usuario-Id, X-Rol)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no tiene permiso para la acción (US-19)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El recurso no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (transición inválida, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regla de negocio incumplida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UsuarioId": []
+          },
+          {
+            "Rol": []
+          }
+        ]
+      }
+    },
+    "/pedidos/{pedido_id}": {
+      "get": {
+        "tags": [
+          "Pedidos"
+        ],
+        "summary": "Consultar el resumen de un pedido",
+        "operationId": "consultar_pedido_pedidos__pedido_id__get",
+        "parameters": [
+          {
+            "name": "pedido_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Pedido Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumenPedidoOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El recurso no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pedidos/{pedido_id}/promocion": {
+      "post": {
+        "tags": [
+          "Pedidos"
+        ],
+        "summary": "Aplicar una promoción vigente (CU-02)",
+        "description": "RN-04: una sola promoción. RN-05: la elige explícitamente Caja; el sistema nunca la aplica solo.",
+        "operationId": "aplicar_promocion_pedidos__pedido_id__promocion_post",
+        "security": [
+          {
+            "UsuarioId": []
+          },
+          {
+            "Rol": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "pedido_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Pedido Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AplicarPromocionIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadoPedidoOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud mal formada o rol no reconocido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identificar al usuario (X-Usuario-Id, X-Rol)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no tiene permiso para la acción (US-19)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El recurso no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (transición inválida, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regla de negocio incumplida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pedidos/{pedido_id}/cancelacion": {
+      "post": {
+        "tags": [
+          "Pedidos"
+        ],
+        "summary": "Cancelar un pedido (CU-03)",
+        "description": "RN-02: sin preparación iniciada se cancela directo. RN-03: con preparación iniciada exige al Encargado y genera merma.\nLa identidad del autorizador es simulada (supuesto H-10).",
+        "operationId": "cancelar_pedido_pedidos__pedido_id__cancelacion_post",
+        "security": [
+          {
+            "UsuarioId": []
+          },
+          {
+            "Rol": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "pedido_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Pedido Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelarIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadoPedidoOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud mal formada o rol no reconocido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identificar al usuario (X-Usuario-Id, X-Rol)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no tiene permiso para la acción (US-19)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El recurso no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (transición inválida, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regla de negocio incumplida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pedidos/{pedido_id}/lineas/{linea_id}": {
+      "delete": {
+        "tags": [
+          "Pedidos"
+        ],
+        "summary": "Quitar una línea de un producto agotado (CU-04b)",
+        "description": "RN-06: cancelación parcial. Solo procede si el producto está marcado como agotado.",
+        "operationId": "quitar_linea_pedidos__pedido_id__lineas__linea_id__delete",
+        "security": [
+          {
+            "UsuarioId": []
+          },
+          {
+            "Rol": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "pedido_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Pedido Id"
+            }
+          },
+          {
+            "name": "linea_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Linea Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadoPedidoOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud mal formada o rol no reconocido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identificar al usuario (X-Usuario-Id, X-Rol)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no tiene permiso para la acción (US-19)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El recurso no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (transición inválida, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regla de negocio incumplida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pedidos/{pedido_id}/preparacion": {
+      "post": {
+        "tags": [
+          "Cocina"
+        ],
+        "summary": "Iniciar la preparación en una estación",
+        "operationId": "iniciar_preparacion_pedidos__pedido_id__preparacion_post",
+        "security": [
+          {
+            "UsuarioId": []
+          },
+          {
+            "Rol": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "pedido_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Pedido Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IniciarPreparacionIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadoPedidoOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud mal formada o rol no reconocido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identificar al usuario (X-Usuario-Id, X-Rol)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no tiene permiso para la acción (US-19)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El recurso no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (transición inválida, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regla de negocio incumplida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pedidos/{pedido_id}/listo": {
+      "post": {
+        "tags": [
+          "Cocina"
+        ],
+        "summary": "Marcar el pedido como listo",
+        "operationId": "marcar_listo_pedidos__pedido_id__listo_post",
+        "security": [
+          {
+            "UsuarioId": []
+          },
+          {
+            "Rol": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "pedido_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Pedido Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadoPedidoOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud mal formada o rol no reconocido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identificar al usuario (X-Usuario-Id, X-Rol)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no tiene permiso para la acción (US-19)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El recurso no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (transición inválida, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regla de negocio incumplida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/productos/{producto_id}/agotado": {
+      "post": {
+        "tags": [
+          "Cocina"
+        ],
+        "summary": "Marcar un producto como agotado (CU-04a)",
+        "operationId": "marcar_agotado_productos__producto_id__agotado_post",
+        "security": [
+          {
+            "UsuarioId": []
+          },
+          {
+            "Rol": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "producto_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Producto Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud mal formada o rol no reconocido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identificar al usuario (X-Usuario-Id, X-Rol)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no tiene permiso para la acción (US-19)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El recurso no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (transición inválida, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regla de negocio incumplida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/entregas": {
+      "post": {
+        "tags": [
+          "Entregas"
+        ],
+        "summary": "Asignar un repartidor a un pedido a domicilio (CU-05)",
+        "operationId": "asignar_repartidor_entregas_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AsignarRepartidorIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadoEntregaOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud mal formada o rol no reconocido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identificar al usuario (X-Usuario-Id, X-Rol)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no tiene permiso para la acción (US-19)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El recurso no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (transición inválida, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regla de negocio incumplida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "UsuarioId": []
+          },
+          {
+            "Rol": []
+          }
+        ]
+      }
+    },
+    "/entregas/{entrega_id}/salida": {
+      "post": {
+        "tags": [
+          "Entregas"
+        ],
+        "summary": "Registrar la hora de salida",
+        "operationId": "registrar_salida_entregas__entrega_id__salida_post",
+        "security": [
+          {
+            "UsuarioId": []
+          },
+          {
+            "Rol": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "entrega_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Entrega Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadoEntregaOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud mal formada o rol no reconocido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identificar al usuario (X-Usuario-Id, X-Rol)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no tiene permiso para la acción (US-19)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El recurso no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (transición inválida, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regla de negocio incumplida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/entregas/{entrega_id}/confirmacion": {
+      "post": {
+        "tags": [
+          "Entregas"
+        ],
+        "summary": "Confirmar la entrega al cliente",
+        "operationId": "confirmar_entrega_entregas__entrega_id__confirmacion_post",
+        "security": [
+          {
+            "UsuarioId": []
+          },
+          {
+            "Rol": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "entrega_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Entrega Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadoEntregaOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud mal formada o rol no reconocido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identificar al usuario (X-Usuario-Id, X-Rol)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no tiene permiso para la acción (US-19)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El recurso no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (transición inválida, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regla de negocio incumplida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/entregas/{entrega_id}/fallida": {
+      "post": {
+        "tags": [
+          "Entregas"
+        ],
+        "summary": "Registrar una entrega fallida con su motivo (RN-11)",
+        "operationId": "registrar_entrega_fallida_entregas__entrega_id__fallida_post",
+        "security": [
+          {
+            "UsuarioId": []
+          },
+          {
+            "Rol": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "entrega_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Entrega Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntregaFallidaIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadoEntregaOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud mal formada o rol no reconocido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta identificar al usuario (X-Usuario-Id, X-Rol)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El rol no tiene permiso para la acción (US-19)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El recurso no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto con el estado actual (transición inválida, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Regla de negocio incumplida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/menu": {
+      "get": {
+        "tags": [
+          "Consultas"
+        ],
+        "summary": "Menú con disponibilidad (US-04)",
+        "operationId": "consultar_menu_menu_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProductoOut"
+                  },
+                  "type": "array",
+                  "title": "Response Consultar Menu Menu Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/promociones/vigentes": {
+      "get": {
+        "tags": [
+          "Consultas"
+        ],
+        "summary": "Promociones vigentes en una fecha y hora",
+        "operationId": "consultar_promociones_vigentes_promociones_vigentes_get",
+        "parameters": [
+          {
+            "name": "fecha_hora",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fecha Hora"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PromocionOut"
+                  },
+                  "title": "Response Consultar Promociones Vigentes Promociones Vigentes Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/repartidores/disponibles": {
+      "get": {
+        "tags": [
+          "Consultas"
+        ],
+        "summary": "Repartidores disponibles (US-14)",
+        "operationId": "consultar_repartidores_disponibles_repartidores_disponibles_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RepartidorOut"
+                  },
+                  "type": "array",
+                  "title": "Response Consultar Repartidores Disponibles Repartidores Disponibles Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operaciones/{operacion_id}/evaluacion": {
+      "get": {
+        "tags": [
+          "Paquete PIA"
+        ],
+        "summary": "Evaluar puede_procesarse y beneficio_referencia",
+        "description": "Evalúa con Specifications una operación del paquete de datos del PIA (solo lectura).",
+        "operationId": "evaluar_operacion_operaciones__operacion_id__evaluacion_get",
+        "parameters": [
+          {
+            "name": "operacion_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Operacion Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvaluacionOperacionOut"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El recurso no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/salud": {
+      "get": {
+        "tags": [
+          "Operación"
+        ],
+        "summary": "Estado del servicio",
+        "operationId": "salud_salud_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AplicarPromocionIn": {
+        "properties": {
+          "promocion_id": {
+            "type": "string",
+            "title": "Promocion Id",
+            "examples": [
+              "promo-martes"
+            ]
+          },
+          "fecha_hora": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fecha Hora",
+            "description": "Por omisión, el momento actual. Útil para pruebas."
+          }
+        },
+        "type": "object",
+        "required": [
+          "promocion_id"
+        ],
+        "title": "AplicarPromocionIn"
+      },
+      "AsignarRepartidorIn": {
+        "properties": {
+          "pedido_id": {
+            "type": "string",
+            "title": "Pedido Id"
+          },
+          "repartidor_id": {
+            "type": "string",
+            "title": "Repartidor Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pedido_id",
+          "repartidor_id"
+        ],
+        "title": "AsignarRepartidorIn"
+      },
+      "AutorizadorIn": {
+        "properties": {
+          "usuario_id": {
+            "type": "string",
+            "title": "Usuario Id",
+            "examples": [
+              "eva"
+            ]
+          },
+          "rol": {
+            "$ref": "#/components/schemas/Rol",
+            "default": "encargado"
+          }
+        },
+        "type": "object",
+        "required": [
+          "usuario_id"
+        ],
+        "title": "AutorizadorIn"
+      },
+      "Canal": {
+        "type": "string",
+        "enum": [
+          "mesa",
+          "telefono_whatsapp",
+          "domicilio"
+        ],
+        "title": "Canal"
+      },
+      "CancelarIn": {
+        "properties": {
+          "motivo": {
+            "type": "string",
+            "minLength": 3,
+            "title": "Motivo",
+            "examples": [
+              "El cliente cambió de opinión"
+            ]
+          },
+          "autorizador": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AutorizadorIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Requerido si ya inició la preparación (RN-03)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "motivo"
+        ],
+        "title": "CancelarIn"
+      },
+      "ClienteIn": {
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Nombre",
+            "examples": [
+              "Marta"
+            ]
+          },
+          "telefono": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Telefono",
+            "examples": [
+              "8112345678"
+            ]
+          },
+          "direccion": {
+            "type": "string",
+            "title": "Direccion",
+            "default": "",
+            "examples": [
+              "Calle 1 #100"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "nombre",
+          "telefono"
+        ],
+        "title": "ClienteIn"
+      },
+      "EntregaFallidaIn": {
+        "properties": {
+          "motivo": {
+            "type": "string",
+            "minLength": 3,
+            "title": "Motivo",
+            "examples": [
+              "Cliente ausente"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "motivo"
+        ],
+        "title": "EntregaFallidaIn"
+      },
+      "ErrorOut": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "title": "Error"
+          },
+          "mensaje": {
+            "type": "string",
+            "title": "Mensaje"
+          },
+          "motivos": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motivos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "mensaje"
+        ],
+        "title": "ErrorOut"
+      },
+      "EstacionCocina": {
+        "type": "string",
+        "enum": [
+          "parrilla",
+          "fria",
+          "bebidas",
+          "empaque"
+        ],
+        "title": "EstacionCocina"
+      },
+      "EvaluacionOperacionOut": {
+        "properties": {
+          "operacion_id": {
+            "type": "string",
+            "title": "Operacion Id"
+          },
+          "total": {
+            "type": "string",
+            "title": "Total"
+          },
+          "puede_procesarse": {
+            "type": "boolean",
+            "title": "Puede Procesarse"
+          },
+          "motivos_de_rechazo": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Motivos De Rechazo"
+          },
+          "beneficio_referencia": {
+            "type": "boolean",
+            "title": "Beneficio Referencia"
+          },
+          "nota": {
+            "type": "string",
+            "title": "Nota",
+            "default": "beneficio_referencia es solo elegibilidad; no aplica descuentos (RN-05)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "operacion_id",
+          "total",
+          "puede_procesarse",
+          "motivos_de_rechazo",
+          "beneficio_referencia"
+        ],
+        "title": "EvaluacionOperacionOut"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "IniciarPreparacionIn": {
+        "properties": {
+          "estacion": {
+            "$ref": "#/components/schemas/EstacionCocina"
+          }
+        },
+        "type": "object",
+        "required": [
+          "estacion"
+        ],
+        "title": "IniciarPreparacionIn"
+      },
+      "ItemIn": {
+        "properties": {
+          "platillo_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Platillo Id",
+            "examples": [
+              "taco-pastor"
+            ]
+          },
+          "cantidad": {
+            "type": "integer",
+            "maximum": 99.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Cantidad",
+            "examples": [
+              2
+            ]
+          },
+          "modificaciones": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Modificaciones",
+            "examples": [
+              [
+                "sin cebolla"
+              ]
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "platillo_id",
+          "cantidad"
+        ],
+        "title": "ItemIn"
+      },
+      "LineaOut": {
+        "properties": {
+          "linea_id": {
+            "type": "string",
+            "title": "Linea Id"
+          },
+          "producto_id": {
+            "type": "string",
+            "title": "Producto Id"
+          },
+          "producto": {
+            "type": "string",
+            "title": "Producto"
+          },
+          "cantidad": {
+            "type": "integer",
+            "title": "Cantidad"
+          },
+          "precio_unitario": {
+            "type": "string",
+            "title": "Precio Unitario"
+          },
+          "subtotal": {
+            "type": "string",
+            "title": "Subtotal"
+          },
+          "modificaciones": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Modificaciones",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "linea_id",
+          "producto_id",
+          "producto",
+          "cantidad",
+          "precio_unitario",
+          "subtotal"
+        ],
+        "title": "LineaOut"
+      },
+      "ProductoOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "precio": {
+            "type": "string",
+            "title": "Precio"
+          },
+          "disponible": {
+            "type": "boolean",
+            "title": "Disponible"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "nombre",
+          "precio",
+          "disponible"
+        ],
+        "title": "ProductoOut"
+      },
+      "PromocionOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "productos": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Productos"
+          },
+          "horario": {
+            "type": "string",
+            "title": "Horario"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "nombre",
+          "productos",
+          "horario"
+        ],
+        "title": "PromocionOut"
+      },
+      "RegistrarPedidoIn": {
+        "properties": {
+          "canal": {
+            "$ref": "#/components/schemas/Canal"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ItemIn"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Items"
+          },
+          "mesa": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mesa",
+            "examples": [
+              "5"
+            ]
+          },
+          "cliente": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClienteIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "canal",
+          "items"
+        ],
+        "title": "RegistrarPedidoIn"
+      },
+      "RepartidorOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "nombre"
+        ],
+        "title": "RepartidorOut"
+      },
+      "ResultadoEntregaOut": {
+        "properties": {
+          "entrega_id": {
+            "type": "string",
+            "title": "Entrega Id"
+          },
+          "estado": {
+            "type": "string",
+            "title": "Estado"
+          }
+        },
+        "type": "object",
+        "required": [
+          "entrega_id",
+          "estado"
+        ],
+        "title": "ResultadoEntregaOut"
+      },
+      "ResultadoPedidoOut": {
+        "properties": {
+          "pedido_id": {
+            "type": "string",
+            "title": "Pedido Id"
+          },
+          "total": {
+            "type": "string",
+            "title": "Total"
+          },
+          "estado": {
+            "type": "string",
+            "title": "Estado"
+          },
+          "genero_merma": {
+            "type": "boolean",
+            "title": "Genero Merma",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "pedido_id",
+          "total",
+          "estado"
+        ],
+        "title": "ResultadoPedidoOut"
+      },
+      "ResumenPedidoOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "canal": {
+            "type": "string",
+            "title": "Canal"
+          },
+          "mesa_o_cliente": {
+            "type": "string",
+            "title": "Mesa O Cliente"
+          },
+          "lineas": {
+            "items": {
+              "$ref": "#/components/schemas/LineaOut"
+            },
+            "type": "array",
+            "title": "Lineas"
+          },
+          "promocion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Promocion"
+          },
+          "descuento": {
+            "type": "string",
+            "title": "Descuento"
+          },
+          "total": {
+            "type": "string",
+            "title": "Total"
+          },
+          "estado": {
+            "type": "string",
+            "title": "Estado"
+          },
+          "responsable": {
+            "type": "string",
+            "title": "Responsable"
+          },
+          "acciones_permitidas": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Acciones Permitidas"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "canal",
+          "mesa_o_cliente",
+          "lineas",
+          "promocion",
+          "descuento",
+          "total",
+          "estado",
+          "responsable",
+          "acciones_permitidas"
+        ],
+        "title": "ResumenPedidoOut"
+      },
+      "Rol": {
+        "type": "string",
+        "enum": [
+          "mesero",
+          "caja",
+          "cocina",
+          "encargado",
+          "repartidor",
+          "gerente",
+          "cliente"
+        ],
+        "title": "Rol"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "UsuarioId": {
+        "type": "apiKey",
+        "description": "Identificador del usuario que actúa (autenticación simulada).",
+        "in": "header",
+        "name": "X-Usuario-Id"
+      },
+      "Rol": {
+        "type": "apiKey",
+        "description": "mesero, caja, cocina, encargado, repartidor, gerente o cliente.",
+        "in": "header",
+        "name": "X-Rol"
+      }
+    }
+  }
+}

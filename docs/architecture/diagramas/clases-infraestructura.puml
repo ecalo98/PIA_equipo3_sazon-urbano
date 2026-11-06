@@ -1,0 +1,212 @@
+@startuml clases-infraestructura
+title Sazón Urbano - Diagrama de clases: infraestructura (memoria y SQL/PostgreSQL)
+
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassBorderColor #444444
+skinparam ArrowColor #555555
+skinparam defaultFontName Arial
+
+package "Interfaces (dominio y aplicación)" #EEEEEE {
+  interface PedidoRepository <<ABC>>
+  interface PromocionRepository <<ABC>>
+  interface EntregaRepository <<ABC>>
+  interface RepartidorRepository <<ABC>>
+  interface MermaRepository <<ABC>>
+  interface DisponibilidadRepository <<ABC>>
+  interface UnitOfWork <<ABC>>
+  interface ControlDeAcceso <<ABC>>
+  interface PublicadorDeEventos <<ABC>>
+  interface Notificador <<ABC>>
+  interface ConsultasDeDisponibilidad <<ABC>>
+  interface CatalogoDePlatillos <<ABC>>
+  interface ConsultasDePedidos <<ABC>>
+  interface ConsultasDeMenu <<ABC>>
+  interface ConsultasDePromociones <<ABC>>
+  interface ConsultasDeRepartidores <<ABC>>
+}
+
+package "Infraestructura: implementaciones en memoria (infrastructure/memoria)" #FAEEDA {
+  class "_RepositorioEnMemoria" as RepoMem <<base>> {
+    +obtener_por_id(id)
+    +guardar(objeto)
+  }
+  class PedidoRepositoryEnMemoria
+  class PromocionRepositoryEnMemoria
+  class EntregaRepositoryEnMemoria
+  class RepartidorRepositoryEnMemoria
+  class MermaRepositoryEnMemoria
+  class DisponibilidadEnMemoria {
+    +marcar_agotado(...)
+    +esta_agotado(producto_id)
+  }
+  class UnitOfWorkEnMemoria {
+    +iniciar()
+    +confirmar()
+    +deshacer()
+  }
+  class PublicadorDeEventosEnMemoria {
+    +publicar(eventos)
+  }
+  class NotificadorInterno {
+    +avisar(destinatarios, mensaje)
+  }
+  class ControlDeAccesoPorRol {
+    +verificar_permiso(responsable, accion)
+  }
+}
+
+package "Infraestructura: persistencia relacional (infrastructure/persistence)" #FFF3D6 {
+  class "_RepositorioSql" as RepoSql <<base>> {
+    +obtener_por_id(id)  «lanza error de negocio si no existe»
+    +guardar(objeto)
+  }
+  class PedidoRepositorySql
+  class PromocionRepositorySql
+  class EntregaRepositorySql
+  class RepartidorRepositorySql
+  class MermaRepositorySql {
+    +guardar(merma)
+  }
+  class DisponibilidadSql {
+    +marcar_agotado(...)
+    +esta_agotado(producto_id)
+  }
+  class UnitOfWorkSql {
+    +iniciar()
+    +confirmar()  «commit»
+    +deshacer()   «rollback»
+  }
+  class CatalogoDePlatillosSql {
+    +obtener(platillo_id)
+    +listar()
+  }
+  class ConsultasDePedidosSql
+  class ConsultasDeMenuSql
+  class ConsultasDePromocionesSql
+  class ConsultasDeRepartidoresSql
+
+  class "mapeo.py" as Mapeo <<dominio <-> filas>> {
+    +pedido_a_fila / fila_a_pedido
+    +promocion_a_fila / fila_a_promocion
+    +repartidor_a_fila / fila_a_repartidor
+    +entrega_a_fila / fila_a_entrega
+    +merma_a_fila / fila_a_merma
+  }
+  class "base_datos.py" as BD <<conexión>> {
+    +url_desde_entorno()  «DATABASE_URL o DB_*»
+    +crear_engine(url)
+    +crear_session_factory(engine)
+    +crear_tablas(engine)
+  }
+  class "semilla.py" as Semilla <<datos iniciales>> {
+    +cargar_catalogo(session)
+    +cargar_demo(session)
+  }
+
+  package "Tablas (modelos)" #FFFFFF {
+    class PedidoRow
+    class LineaPedidoRow
+    class PreparacionRow
+    class CancelacionRow
+    class PromocionRow
+    class RepartidorRow
+    class EntregaRow
+    class MermaRow
+    class ProductoAgotadoRow
+    class PlatilloRow
+  }
+}
+
+package "Composición y datos del PIA (infrastructure/)" #FAEEDA {
+  class "composicion.py" as Comp <<raíz de composición>> {
+    +construir_aplicacion() : Aplicacion  «memoria»
+    +construir_aplicacion_sql(session) : Aplicacion
+  }
+  class Aplicacion <<contenedor>> {
+    +pedidos_svc
+    +disponibilidad_svc
+    +entregas_svc
+    +preparacion_svc
+    +repositorios y puertos
+  }
+  class PaquetePia <<lectura de CSV>> {
+    +operaciones : OperacionEvaluable
+    +catalogo
+    +casos_prueba
+    +transiciones
+  }
+}
+
+' --- Implementaciones (flechas hacia las interfaces) ---
+RepoMem <|-- PedidoRepositoryEnMemoria
+RepoMem <|-- PromocionRepositoryEnMemoria
+RepoMem <|-- EntregaRepositoryEnMemoria
+RepoMem <|-- RepartidorRepositoryEnMemoria
+PedidoRepository <|.. PedidoRepositoryEnMemoria
+PromocionRepository <|.. PromocionRepositoryEnMemoria
+EntregaRepository <|.. EntregaRepositoryEnMemoria
+RepartidorRepository <|.. RepartidorRepositoryEnMemoria
+MermaRepository <|.. MermaRepositoryEnMemoria
+DisponibilidadRepository <|.. DisponibilidadEnMemoria
+ConsultasDeDisponibilidad <|.. DisponibilidadEnMemoria
+UnitOfWork <|.. UnitOfWorkEnMemoria
+PublicadorDeEventos <|.. PublicadorDeEventosEnMemoria
+Notificador <|.. NotificadorInterno
+ControlDeAcceso <|.. ControlDeAccesoPorRol
+
+RepoSql <|-- PedidoRepositorySql
+RepoSql <|-- PromocionRepositorySql
+RepoSql <|-- EntregaRepositorySql
+RepoSql <|-- RepartidorRepositorySql
+PedidoRepository <|.. PedidoRepositorySql
+PromocionRepository <|.. PromocionRepositorySql
+EntregaRepository <|.. EntregaRepositorySql
+RepartidorRepository <|.. RepartidorRepositorySql
+MermaRepository <|.. MermaRepositorySql
+DisponibilidadRepository <|.. DisponibilidadSql
+ConsultasDeDisponibilidad <|.. DisponibilidadSql
+UnitOfWork <|.. UnitOfWorkSql
+CatalogoDePlatillos <|.. CatalogoDePlatillosSql
+ConsultasDePedidos <|.. ConsultasDePedidosSql
+ConsultasDeMenu <|.. ConsultasDeMenuSql
+ConsultasDePromociones <|.. ConsultasDePromocionesSql
+ConsultasDeRepartidores <|.. ConsultasDeRepartidoresSql
+
+' --- Relaciones internas de la persistencia ---
+RepoSql ..> Mapeo : traduce
+Mapeo ..> PedidoRow
+Mapeo ..> PromocionRow
+Mapeo ..> RepartidorRow
+Mapeo ..> EntregaRow
+Mapeo ..> MermaRow
+PedidoRow "1" *-- "1..*" LineaPedidoRow
+PedidoRow "1" *-- "0..*" PreparacionRow
+PedidoRow "1" *-- "0..*" CancelacionRow
+DisponibilidadSql ..> ProductoAgotadoRow
+CatalogoDePlatillosSql ..> PlatilloRow
+Semilla ..> PlatilloRow
+UnitOfWorkSql ..> BD : sesión por solicitud
+BD ..> PedidoRow : crear_tablas
+
+' --- Composición ---
+Comp ..> Aplicacion : arma
+Comp ..> UnitOfWorkEnMemoria
+Comp ..> UnitOfWorkSql
+Comp ..> PedidoRepositorySql
+Comp ..> PedidoRepositoryEnMemoria
+
+note bottom of PaquetePia
+  Solo lee los CSV originales (nunca los modifica) y los
+  convierte en OperacionEvaluable con total = suma(precio x cantidad)
+  usando Decimal. Lo usan los scripts de evidencia y GET /operaciones/{id}/evaluacion.
+end note
+
+note bottom of UnitOfWorkSql
+  Una Unit of Work por solicitud: confirma todo o deshace todo.
+  Los repositorios SQL no confirman por sí mismos (ADR-02, ADR-06).
+end note
+
+@enduml

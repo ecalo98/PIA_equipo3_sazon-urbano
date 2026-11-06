@@ -1,0 +1,88 @@
+@startuml bpmn-complemento-excepciones
+title Sazón Urbano - BPMN complementario (2/2): cancelación, producto agotado y alertas\nSubprocesos que faltaban en BPMN_E3.pdf (H-05)
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam ActivityBackgroundColor #F1FAD8
+skinparam ActivityBorderColor #5A6B2A
+skinparam ArrowColor #333333
+skinparam NoteBackgroundColor #FFF9DB
+skinparam NoteBorderColor #B59B00
+
+|#F3E8FF|Mesero / Caja|
+|#E1F5EE|Sistema|
+|#FAEEDA|Cocina|
+|#FDE8E8|Encargado|
+
+|Mesero / Caja|
+start
+floating note left: <b>A. Cancelación del pedido</b>\n(RN-02, RN-03, RN-10)
+:Solicita cancelar el pedido\ncon su motivo;
+|Sistema|
+if (¿Alguna estación ya inició\nla preparación?) then (no)
+  :Cancela el pedido sin autorización adicional (RN-02)\ny registra motivo y responsable;
+  |Mesero / Caja|
+  end
+else (sí)
+  |Encargado|
+  if (¿Autoriza la cancelación? (RN-03, RN-10)) then (sí)
+    |Sistema|
+    :Cancela el pedido y registra, en la misma operación,\nla merma, el motivo, el responsable y el autorizador;
+    end
+  else (no)
+    |Sistema|
+    :Rechaza la cancelación;
+    :El pedido continúa su preparación;
+    end
+  endif
+endif
+
+|Cocina|
+start
+floating note left: <b>B. Producto agotado</b>\n(durante la preparación, RN-06)
+:Detecta que un insumo crítico se agotó;
+:Marca el producto como agotado;
+|Sistema|
+:Notifica de inmediato a mesero y caja\ny deja de mostrar el producto como disponible;
+|Mesero / Caja|
+:Informa al cliente;
+:Quita solo la línea agotada del pedido\nsin cancelar el pedido completo (RN-06);
+|Sistema|
+:Recalcula el total\ny registra la cancelación parcial;
+end
+
+|Sistema|
+start
+floating note left: <b>C. Alertas automáticas</b>\n(RN-07, RN-08, RN-15)
+fork
+  :Compara el tiempo de cada pedido\ncon su tiempo meta\n(18 min mesa / para llevar, 25 min domicilio);
+  if (¿Superó el tiempo meta? (RN-07)) then (sí)
+    :Marca el pedido como "retrasado";
+    |Encargado|
+    :Recibe la alerta y da seguimiento;
+    |Sistema|
+  else (no)
+  endif
+fork again
+  :Cuenta los pedidos activos en horario pico\n(13:00–15:00 y 19:00–21:00);
+  if (¿Más de 25 pedidos activos? (RN-08)) then (sí)
+    |Encargado|
+    :Recibe el aviso de saturación de cocina;
+    |Sistema|
+  else (no)
+  endif
+fork again
+  :Actualiza el inventario con cada venta,\nmerma o recepción (RN-13);
+  if (¿Existencia del insumo en el mínimo\nconfigurado por el Encargado? (RN-15)) then (sí)
+    |Encargado|
+    :Recibe la alerta de reabastecimiento\n(insumo, existencia actual y mínimo);
+    |Sistema|
+  else (no)
+  endif
+end fork
+stop
+
+note right
+  Ajuste manual de inventario:
+  solo el Encargado (RN-10, US-10).
+end note
+@enduml

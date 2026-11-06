@@ -1,0 +1,109 @@
+@startuml bpmn-complemento-proceso
+title Sazón Urbano - BPMN complementario (1/2): proceso principal del pedido\nComplementa BPMN_E3.pdf según el BRD (H-04, H-05, H-01)
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam ActivityBackgroundColor #F1FAD8
+skinparam ActivityBorderColor #5A6B2A
+skinparam ArrowColor #333333
+skinparam NoteBackgroundColor #FFF9DB
+skinparam NoteBorderColor #B59B00
+
+|#E6F1FB|Cliente|
+|#F3E8FF|Mesero|
+|#FFF3D6|Caja|
+|#E1F5EE|Sistema|
+|#FAEEDA|Cocina|
+|#FDE8E8|Encargado|
+|#EEEEEE|Repartidor|
+
+|Cliente|
+start
+:Realiza pedido\n(mesa, teléfono/WhatsApp o domicilio);
+
+if (¿Canal?) then (mesa)
+  |Mesero|
+  :Captura productos, cantidades\ny modificaciones;
+else (teléfono / WhatsApp / domicilio)
+  |Caja|
+  :Captura productos, cantidades, modificaciones\ny datos del cliente (teléfono y dirección si es domicilio);
+endif
+
+|Sistema|
+:Verifica disponibilidad\ny registra responsable y canal (RN-14);
+if (¿Algún producto agotado?) then (sí)
+  |Caja|
+  :Informa al cliente del producto agotado;
+  |Cliente|
+  if (¿Continúa con el pedido?) then (no)
+    end
+  else (sí, sin esa línea)
+    |Sistema|
+    :Quita solo la línea agotada\ny recalcula el total (RN-06);
+  endif
+else (no)
+endif
+
+if (¿Domicilio con total menor a $150? (RN-01)) then (sí)
+  |Caja|
+  :Informa el monto faltante\ny ofrece cambiar a "para llevar";
+  |Cliente|
+  if (¿Acepta cambiar a para llevar?) then (no)
+    end
+  else (sí)
+  endif
+else (no)
+endif
+
+|Caja|
+if (¿El cliente pide una promoción?) then (sí)
+  :Selecciona la promoción explícitamente (RN-05);
+  |Sistema|
+  if (¿Vigente en día y horario, aplica a los productos\ny no hay otra promoción? (RN-04)) then (sí)
+    :Aplica el descuento\ny recalcula el total;
+  else (no)
+    :Rechaza la promoción con el motivo;
+  endif
+else (no)
+endif
+
+|Caja|
+:Procesa el pago\ny confirma el pedido;
+|Sistema|
+:Envía el pedido completo a las estaciones\n(parrilla, fría, bebidas, empaque)\ny actualiza el inventario (RN-13);
+
+|Cocina|
+:Prepara por estación;
+note right
+  Durante la preparación pueden ocurrir:
+  producto agotado, alertas de tiempo o de
+  existencia mínima y cancelaciones
+  (diagrama 2/2).
+end note
+:Empaca el pedido y lo marca como listo;
+
+|Sistema|
+if (¿Canal domicilio?) then (no)
+  |Caja|
+  :Entrega el pedido al cliente\n(en mesa o para llevar);
+  |Sistema|
+  :Cierra el pedido\ny alimenta el reporte de discrepancias;
+  stop
+else (sí)
+  |Encargado|
+  :Asigna un repartidor disponible\nsegún cercanía y disponibilidad;
+  |Repartidor|
+  :Registra la hora de salida\ny entrega el pedido a domicilio (RN-11);
+  if (¿Entrega exitosa?) then (sí)
+    :Registra la hora de entrega;
+    |Sistema|
+    :Cierra el pedido\ny alimenta el reporte de discrepancias;
+    stop
+  else (no)
+    |Repartidor|
+    :Registra la entrega fallida\ny su motivo (RN-11);
+    |Sistema|
+    :Marca el pedido como\n"entrega no completada";
+    end
+  endif
+endif
+@enduml

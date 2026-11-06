@@ -1,0 +1,177 @@
+@startuml clases-specifications
+title Sazón Urbano - Specification, máquina de estados y Domain Events (domain/)
+
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassBorderColor #444444
+skinparam ArrowColor #555555
+skinparam defaultFontName Arial
+skinparam nodesep 25
+skinparam ranksep 40
+
+package "Patrón Specification (domain/specifications)" #E1F5EE {
+  abstract class Specification <<ABC>> {
+    +es_satisfecha_por(candidato) : bool
+    +descripcion : str
+    +y(otra) : Specification   «operador &»
+    +o(otra) : Specification   «operador |»
+    +no() : Specification      «operador ~»
+    +motivos_de_rechazo(candidato) : list
+  }
+  class YSpecification <<combinador AND>>
+  class OSpecification <<combinador OR>>
+  class NoSpecification <<combinador NOT>>
+
+  class ActorActivo
+  class ActorPreferente
+  class TieneLineas
+  class Autorizado
+  class PromocionActiva
+  class TotalMinimo {
+    +minimo : Dinero
+  }
+  class MontoMinimoDomicilio {
+    +minimo : Dinero  «RN-01»
+  }
+
+  class OperacionEvaluable <<ValueObject>> {
+    +operacion_id
+    +actor_activo
+    +actor_preferente
+    +num_lineas
+    +total : Dinero
+    +autorizado
+    +promocion_activa
+    +canal : Canal
+  }
+
+  class "puede_procesarse()" as F1 <<fábrica>>
+  class "beneficio_referencia()" as F2 <<fábrica>>
+  note bottom of F1
+    ActorActivo & TieneLineas & Autorizado
+  end note
+  note bottom of F2
+    ActorPreferente & TotalMinimo(1500) & ~PromocionActiva
+    (solo elegibilidad; nunca aplica descuento, RN-05)
+  end note
+}
+
+package "Máquina de estados (domain/maquina_estados y pedido)" #FAEEDA {
+  class MaquinaDeEstados {
+    +nombre
+    +acciones_permitidas(estado)
+    +puede(estado, accion) : bool
+    +transicionar(estado, accion) : Enum
+    +es_final(estado) : bool
+    +transiciones() : list
+    +a_plantuml(estado_inicial) : str
+  }
+  enum EstadoPedido {
+    CREADO
+    ACEPTADO
+    EN_PREPARACION
+    LISTO
+    ENTREGADO
+    CANCELADO
+    ENTREGA_NO_COMPLETADA
+  }
+  enum AccionPedido {
+    ACEPTAR
+    INICIAR_PREPARACION
+    MARCAR_LISTO
+    ENTREGAR
+    FALLAR_ENTREGA
+    CANCELAR
+  }
+  class "MAQUINA_PEDIDO" as MP <<instancia>>
+  class Pedido <<AggregateRoot>> {
+    +estado : EstadoPedido
+    -_transicionar(accion)
+    +confirmar()
+    +cancelar(...)
+    +iniciar_preparacion(estacion)
+    +marcar_listo()
+    +marcar_entregado()
+    +marcar_entrega_no_completada()
+  }
+  class TransicionDeEstadoInvalida <<ErrorDeNegocio>>
+}
+
+package "Domain Events (domain/eventos)" #E6F1FB {
+  class PedidoConfirmado <<evento>>
+  class PromocionAplicadaAPedido <<evento>>
+  class PedidoCancelado <<evento>>
+  class LineaDePedidoCancelada <<evento>>
+  class PreparacionIniciada <<evento>>
+  class PedidoListo <<evento>>
+  class PedidoEntregado <<evento>>
+  class PedidoEntregaNoCompletada <<evento>>
+  class RepartidorAsignado <<evento>>
+  class EntregaIniciada <<evento>>
+  class EntregaCompletada <<evento>>
+  class EntregaFallida <<evento>>
+  class MermaRegistrada <<evento>>
+  class ProductoMarcadoAgotado <<evento>>
+}
+
+class Entrega <<AggregateRoot>>
+class "CancelarPedidoHandler" as H1 <<aplicación>>
+class "MarcarProductoAgotadoHandler" as H2 <<aplicación>>
+class "aprobar_operacion()" as AP <<aplicación>>
+
+' --- Specification ---
+Specification <|-- YSpecification
+Specification <|-- OSpecification
+Specification <|-- NoSpecification
+Specification <|-- ActorActivo
+Specification <|-- ActorPreferente
+Specification <|-- TieneLineas
+Specification <|-- Autorizado
+Specification <|-- PromocionActiva
+Specification <|-- TotalMinimo
+Specification <|-- MontoMinimoDomicilio
+YSpecification o-- "2" Specification
+OSpecification o-- "2" Specification
+NoSpecification o-- "1" Specification
+Specification ..> OperacionEvaluable : evalúa
+F1 ..> Specification : arma
+F2 ..> Specification : arma
+Pedido ..> MontoMinimoDomicilio : usa en confirmar() (RN-01)
+AP ..> F1
+AP ..> Pedido : confirmar()
+AP ..> OperacionEvaluable
+
+' --- Máquina de estados ---
+MP ..> MaquinaDeEstados : instancia de
+Pedido --> MP : consulta la tabla
+MaquinaDeEstados ..> EstadoPedido
+MaquinaDeEstados ..> AccionPedido
+MaquinaDeEstados ..> TransicionDeEstadoInvalida : lanza
+Pedido --> EstadoPedido
+
+' --- Eventos ---
+Pedido ..> PedidoConfirmado : emite
+Pedido ..> PromocionAplicadaAPedido : emite
+Pedido ..> PedidoCancelado : emite
+Pedido ..> LineaDePedidoCancelada : emite
+Pedido ..> PreparacionIniciada : emite
+Pedido ..> PedidoListo : emite
+Pedido ..> PedidoEntregado : emite
+Pedido ..> PedidoEntregaNoCompletada : emite
+Entrega ..> RepartidorAsignado : emite
+Entrega ..> EntregaIniciada : emite
+Entrega ..> EntregaCompletada : emite
+Entrega ..> EntregaFallida : emite
+H1 ..> MermaRegistrada : emite
+H2 ..> ProductoMarcadoAgotado : emite
+
+note bottom of MP
+  Cada transición válida está en una sola tabla.
+  Cualquier otra lanza TransicionDeEstadoInvalida (409).
+  El diagrama de estados se genera de esta misma tabla
+  (estados-pedido.puml).
+end note
+
+@enduml

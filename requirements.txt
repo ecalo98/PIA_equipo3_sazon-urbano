@@ -1,0 +1,5 @@
+# Dependencias de ejecución
+SQLAlchemy>=2.0,<2.1
+psycopg[binary]>=3.1
+fastapi>=0.110
+uvicorn[standard]>=0.29

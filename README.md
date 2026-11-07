@@ -48,9 +48,64 @@ alertas de existencia mínima, pedidos retrasados y reportes.
 | 6 | Pruebas | `tests/` |
 | 7 | Bitácora de uso de IA | `docs/architecture/u3/Bitácora de IA.pdf` |
 
+## Instalación
+
+Requisitos: Python 3.11 o superior (o Docker).
+
+```
+git clone <URL_DEL_REPOSITORIO>
+cd repositorio-sazon-urbano
+python -m venv .venv && source .venv/bin/activate     # Windows: .venv\Scripts\activate
+pip install -r requirements-dev.txt
+cp .env.example .env                                   # ajustar valores; .env no se sube al repositorio
+```
+
+## Ejecución con Docker
+
+`docker-compose.yml` define 3 servicios: **db** (PostgreSQL 16), **app** (API FastAPI) y **tests** (pytest con cobertura).
+La configuración sale de `.env` (12-Factor App); sin secretos en el código.
+
+```
+cp .env.example .env            # y cambiar DB_PASSWORD
+docker compose up --build       # db + app  ->  Swagger UI: http://localhost:8000/docs
+docker compose run --rm tests   # pruebas + cobertura contra PostgreSQL (corren también las 10 omitidas)
+docker compose down -v          # apagar y borrar datos
+```
+
+Al arrancar, la app crea las tablas y siembra: catálogo, promoción de martes, repartidores y los **60 pedidos del
+dataset del PIA** (`data/paquete_pia/`, importados a PostgreSQL con claves foráneas a `actores` y `platillos`).
+Para no sembrar, `SEMBRAR_DATOS=0`. La base de pruebas (`<DB_NAME>_test`) se crea sola la primera vez que se crea el volumen.
+
+## Despliegue
+
+Plataforma: **Railway** (también sirve Render o Fly.io con el mismo `Dockerfile`).
+
+1. Crear un proyecto desde el repositorio de GitHub (detecta el `Dockerfile`; el destino por defecto es `app`).
+2. Agregar el plugin **PostgreSQL** y definir en el servicio de la app `DATABASE_URL` con la URL que entrega la plataforma
+   (se acepta `postgres://` o `postgresql://`; el código la convierte a `postgresql+psycopg://`).
+3. Opcional: `APP_ENV=production`. La plataforma inyecta `PORT`, que el contenedor ya usa.
+4. Generar el dominio público y verificar `https://<dominio>/docs`.
+5. (CD) Guardar el hook de despliegue como secreto `DEPLOY_HOOK_URL` en GitHub si se quiere disparar desde `.github/workflows/ci.yml`.
+
+| | URL |
+|---|---|
+| Repositorio | _pendiente: https://github.com/…_ |
+| Despliegue (Swagger UI) | _pendiente: https://…/docs_ |
+
+## Demo
+
+Con la API en marcha (`/docs`), flujo sugerido para la defensa. Los endpoints que cambian datos llevan los encabezados
+`X-Usuario-Id` y `X-Rol` (ver `docs/api/README.md`):
+
+1. `GET /openapi.json` y `/docs` para mostrar el contrato.
+2. Registrar un pedido a domicilio menor a $150 → **422** (RN-01); uno válido → **201**.
+3. Aplicar la promoción de martes y una segunda promoción → **409** (RN-04).
+4. Cancelar un pedido en preparación como mesero → **409**; como encargado → permitido (RN-03).
+5. Mostrar en PostgreSQL los 60 pedidos importados: `docker compose exec db psql -U $DB_USER -d $DB_NAME -c "SELECT count(*) FROM operaciones_pia;"`.
+
 ## Cómo ejecutar las pruebas
 
-Requisitos: Python 3.11 o superior.
+Requisitos: Python 3.11 o superior y `pip install -r requirements-dev.txt`.
 
 ```
 pip install -r requirements-dev.txt
@@ -81,7 +136,6 @@ Ejecutar los 120 casos del paquete del PIA con las Specifications y generar evid
 python scripts/ejecutar_casos_prueba.py      # 120 casos con Specifications
 python scripts/ejecutar_transiciones.py      # 20 transiciones con la máquina de estados
 python scripts/generar_diagrama_estados.py   # regenera el diagrama de estados desde el código
-python scripts/prueba_humo_api.py            # arranca la API real y recorre los 5 casos de uso por HTTP (20 pasos)
 ```
 
 Las pruebas cubren los 5 casos de uso y verifican por código la regla de dependencias
@@ -98,15 +152,18 @@ data/paquete_pia/    CSV del paquete de datos del PIA (sin modificar)
 evidencias/          Resultados de la ejecución de los casos de prueba
 scripts/             Utilidades (ejecución de casos de prueba)
 src/sazon_urbano/    domain · application · infrastructure · api
-fixtures/            Menú propio de Sazón Urbano y operaciones_extra.csv (canal, responsable y casos de RN-01 y US-02; complementan el paquete)
+fixtures/            Menú propio de Sazón Urbano (complementa el paquete)
 tests/               Pruebas de los casos de uso y de la arquitectura
 .env.example         Variables de entorno de ejemplo (sin secretos)
+Dockerfile           Imagen con destinos app y tests
+docker-compose.yml   db (PostgreSQL) + app + tests
+docker/              Script que crea la base de pruebas
 ```
 
 ## Supuestos y hallazgos
 
 Los hallazgos sobre la Unidad 2 y los supuestos pendientes de validación (por ejemplo, Mesero y Caja como roles
-separados) están registrados en la matriz de trazabilidad (`docs/architecture/matriz-trazabilidad.md`).
+separados) están registrados en la matriz de trazabilidad (pendiente de regenerar en el PIA).
 
 ## Uso de IA
 

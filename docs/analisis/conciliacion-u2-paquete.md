@@ -122,7 +122,7 @@ El paquete no incluye el resultado esperado (es del docente), así que `completa
 | **U2/U3** | RN-14: todo pedido registra responsable y canal. RN-01: el domicilio exige mínimo de $150 MXN. US-02: el domicilio exige teléfono y dirección. |
 | **Hallazgo adicional** | Con precios desde 290.00 MXN, cualquier pedido con al menos una línea supera los 150 MXN, así que **los datos del paquete nunca ejercitan RN-01**. |
 | **Tratamiento (decisión C)** | Se crea `fixtures/operaciones_extra.csv` (archivo nuevo) con canal, responsable y datos de domicilio por operación, más casos propios para RN-01. Se combina con los CSV originales al cargar los datos. |
-| **Estado** | Decidido por el equipo. **Hecho:** el archivo existe (60 operaciones del paquete + 9 casos propios: 7 de RN-01 y 2 de US-02) y `tests/test_fixtures_extra.py` verifica sus resultados contra el dominio. |
+| **Estado** | Decidido por el equipo. **Hecho:** el archivo existe (60 operaciones del paquete + 9 casos propios: 7 de RN-01 y 2 de US-02) y `tests/integration/test_fixtures_extra.py` verifica sus resultados contra el dominio. |
 
 ### D-07. Catálogo con `habilitado` y `capacidad_o_stock`
 

@@ -22,7 +22,7 @@ Cada fila une un requerimiento del BRD con el código que lo cumple y la prueba 
 | User Stories (US) | 20 | 12 | 2 | 6 |
 | Casos de uso (CU) | 5 | 5 | 0 | 0 |
 
-Las 151 pruebas automáticas pasan (10 se omiten sin PostgreSQL y corren en CI) con una cobertura del 99 % sobre `src/`.
+Las 155 pruebas automáticas pasan (10 se omiten sin PostgreSQL y corren en CI) con una cobertura del 99.69 % sobre `src/`.
 
 ## 2. Reglas de negocio (RN)
 
@@ -111,10 +111,11 @@ Las 151 pruebas automáticas pasan (10 se omiten sin PostgreSQL y corren en CI) 
 | API REST con OpenAPI | `api/` (17 endpoints, Swagger en `/docs`) · `docs/api/openapi.json` · `test_api › test_openapi_y_swagger_ui_activos` · ADR-07 |
 | 120 casos de prueba del paquete | `scripts/ejecutar_casos_prueba.py` → `evidencias/resultados_casos_prueba.csv` · `test_paquete_pia › test_los_120_casos_coinciden_con_el_oraculo_independiente` |
 | 20 transiciones de prueba | `scripts/ejecutar_transiciones.py` → `evidencias/resultados_transiciones.csv` · `test_maquina_estados` |
-| Pruebas con cobertura ≥ 80 % | 151 pruebas, 99 % de cobertura |
+| Pruebas con cobertura ≥ 80 % | 155 pruebas, 99.69 % de cobertura |
 | Arquitectura por capas verificable | `test_arquitectura` (5 pruebas de dependencias entre capas) · `diagramas/clases*.puml` |
 | CI/CD | `.github/workflows/ci.yml` (PostgreSQL 16, cobertura ≥ 80 %, falla si se omite alguna prueba) |
-| Docker Compose y despliegue | Pendientes de otros frentes del equipo (ver `README.md`) |
+| Docker Compose | `Dockerfile` (destinos `app` y `tests`) y `docker-compose.yml` (db + app + tests) · `docker/crear-bd-pruebas.sh` |
+| Despliegue | Plataforma y URL públicas: ver la tabla de despliegue del `README.md` |
 
 ## 6. Permisos por rol (US-19, NEC-10)
 

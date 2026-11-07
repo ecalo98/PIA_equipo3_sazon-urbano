@@ -43,6 +43,7 @@ jobs:
         run: pip install -r requirements-dev.txt
 
       - name: Pruebas unitarias e integración con cobertura (falla si es < 80 %)
+        shell: bash   # activa pipefail: si pytest falla, el paso falla aunque la salida pase por tee
         run: pytest --cov --cov-report=term-missing --cov-report=xml --cov-report=html -ra | tee pytest.log
 
       - name: Verificar que no se omitió ninguna prueba (las 10 de PostgreSQL deben correr)

@@ -1,10 +1,10 @@
 """Tablas relacionales. Son un detalle de infraestructura: el dominio no las conoce (ADR-02)."""
 from __future__ import annotations
 
-from datetime import datetime, time
+from datetime import date, datetime, time
 from decimal import Decimal
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, Numeric, String, Time
+from sqlalchemy import JSON, Boolean, Date, DateTime, ForeignKey, Integer, Numeric, String, Time
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 DINERO = Numeric(12, 2)
@@ -125,3 +125,36 @@ class PlatilloRow(Base):
     estacion: Mapped[str] = mapped_column(String(20))
     stock: Mapped[int] = mapped_column(Integer)
     habilitado: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class ActorRow(Base):
+    """Comensales del paquete de datos del PIA (`actores.csv`). Solo lectura."""
+    __tablename__ = "actores"
+    id: Mapped[str] = mapped_column(String(20), primary_key=True)
+    nombre: Mapped[str] = mapped_column(String(120))
+    es_preferente: Mapped[bool] = mapped_column(Boolean, default=False)
+    activo: Mapped[bool] = mapped_column(Boolean, default=True)
+    ciudad: Mapped[str] = mapped_column(String(60))
+
+
+class OperacionPiaRow(Base):
+    """Los 60 pedidos del dataset (`operaciones.csv`) con claves foráneas a actores y platillos."""
+    __tablename__ = "operaciones_pia"
+    id: Mapped[str] = mapped_column(String(20), primary_key=True)
+    actor_id: Mapped[str] = mapped_column(ForeignKey("actores.id"), index=True)
+    estado_inicial: Mapped[str] = mapped_column(String(30))
+    fecha_solicitud: Mapped[date] = mapped_column(Date)
+    promocion_activa: Mapped[bool] = mapped_column(Boolean, default=False)
+    autorizado: Mapped[bool] = mapped_column(Boolean, default=False)
+    referencia: Mapped[str] = mapped_column(String(40))
+
+    detalle: Mapped[list["DetalleOperacionPiaRow"]] = relationship(
+        cascade="all, delete-orphan", lazy="selectin")
+
+
+class DetalleOperacionPiaRow(Base):
+    __tablename__ = "detalle_operaciones_pia"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    operacion_id: Mapped[str] = mapped_column(ForeignKey("operaciones_pia.id", ondelete="CASCADE"), index=True)
+    platillo_id: Mapped[str] = mapped_column(ForeignKey("platillos.id"))
+    cantidad: Mapped[int] = mapped_column(Integer)

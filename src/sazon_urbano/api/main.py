@@ -33,6 +33,7 @@ def crear_app(url_bd: str | None = None, sembrar: bool | None = None) -> FastAPI
         with factory() as sesion:
             semilla.cargar_catalogo(sesion)
             semilla.cargar_demo(sesion)
+            semilla.cargar_paquete_pia(sesion)
 
     app = FastAPI(title="Sazón Urbano API", version="1.0.0", description=DESCRIPCION)
     app.state.engine, app.state.session_factory = engine, factory

@@ -44,7 +44,9 @@ def registrar_pedido(datos: s.RegistrarPedidoIn, quien: Responsable = Depends(re
     cliente = DatosCliente(datos.cliente.nombre, datos.cliente.telefono, datos.cliente.direccion) if datos.cliente else None
     return _pedido_out(ctx.app.pedidos_svc.registrar_pedido(c.RegistrarPedido(datos.canal, lineas, quien, cliente, datos.mesa)))
 
-
+@router.get("/pedidos", response_model=list[s.ResumenPedidoOut], tags=["Pedidos"], summary="Listar todos los pedidos")
+def listar_pedidos(ctx: Contexto = Depends(contexto)):
+    return [ctx.pedidos_sql.resumen(i) for i in ctx.pedidos_sql.ids()]
 @router.get("/pedidos/{pedido_id}", response_model=s.ResumenPedidoOut, tags=["Pedidos"],
             summary="Consultar el resumen de un pedido", responses={404: ERRORES[404]})
 def consultar_pedido(pedido_id: str, ctx: Contexto = Depends(contexto)):

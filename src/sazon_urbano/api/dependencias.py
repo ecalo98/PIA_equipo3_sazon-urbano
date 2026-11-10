@@ -35,6 +35,7 @@ class Contexto:
     app: Aplicacion
     catalogo: cs.CatalogoDePlatillosSql
     resumen: q.ConsultarResumenDelPedidoHandler
+    pedidos_sql: cs.ConsultasDePedidosSql
     menu: q.ConsultarMenuDisponibleHandler
     promociones: q.ConsultarPromocionesVigentesHandler
     repartidores: q.ConsultarRepartidoresDisponiblesHandler
@@ -46,6 +47,7 @@ def contexto(request: Request):
         yield Contexto(
             app=construir_aplicacion_sql(session),
             catalogo=cs.CatalogoDePlatillosSql(session),
+            pedidos_sql=cs.ConsultasDePedidosSql(session),
             resumen=q.ConsultarResumenDelPedidoHandler(cs.ConsultasDePedidosSql(session)),
             menu=q.ConsultarMenuDisponibleHandler(cs.ConsultasDeMenuSql(session)),
             promociones=q.ConsultarPromocionesVigentesHandler(cs.ConsultasDePromocionesSql(session)),

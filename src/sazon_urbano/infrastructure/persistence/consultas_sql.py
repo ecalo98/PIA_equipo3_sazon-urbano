@@ -60,9 +60,9 @@ class ConsultasDePedidosSql(ConsultasDePedidos):
             responsable=f"{pedido.responsable.usuario_id} ({pedido.responsable.rol.value})",
             acciones_permitidas=[a.value for a in pedido.acciones_permitidas],
         )
-                def ids(self) -> list[str]:
-        return list(self._session.scalars(select(PedidoRow.id)))
 
+    def ids(self) -> list[str]:
+        return list(self._session.scalars(select(PedidoRow.id)))
 
 class ConsultasDeMenuSql(ConsultasDeMenu):
     def __init__(self, session: Session):

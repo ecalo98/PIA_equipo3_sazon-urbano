@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sazón Urbano · Operación</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="marca"><span id="luz" class="luz" title="Estado de la API"></span><b>Sazón Urbano</b></div>
+  <nav id="nav">
+    <a href="#tomar">Tomar pedido</a><a href="#pedidos">Pedidos</a><a href="#entregas">Entregas</a><a href="#consultas">Consultas</a>
+  </nav>
+  <div class="sesion">
+    <label>Usuario <input id="usuario" size="9"></label>
+    <label>Rol <select id="rol"></select></label>
+  </div>
+</header>
+<div id="aviso" class="aviso" hidden>Conectando con el servidor… en el plan gratuito de Render puede tardar hasta un minuto en despertar.</div>
+<main>
+  <section id="v-tomar">
+    <div class="dos">
+      <div><h2>Menú</h2><div id="menu" class="menu"></div></div>
+      <aside id="ticket" class="ticket"></aside>
+    </div>
+  </section>
+  <section id="v-pedidos" hidden>
+    <div class="dos">
+      <div>
+        <h2>Pedidos</h2>
+        <form id="buscar" class="fila"><input name="id" placeholder="ID del pedido" required><button>Buscar</button></form>
+        <ul id="historial" class="lista"></ul>
+      </div>
+      <aside id="detalle" class="ticket"></aside>
+    </div>
+  </section>
+  <section id="v-entregas" hidden></section>
+  <section id="v-consultas" hidden></section>
+</main>
+<dialog id="dlg"></dialog>
+<div id="toasts" aria-live="polite"></div>
+<script src="app.js"></script>
+</body>
+</html>

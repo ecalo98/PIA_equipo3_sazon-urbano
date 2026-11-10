@@ -4,7 +4,7 @@ from __future__ import annotations
 import os
 
 from fastapi import FastAPI
-
+from fastapi.middleware.cors import CORSMiddleware
 from sazon_urbano.infrastructure.paquete_pia import PaquetePia
 from sazon_urbano.infrastructure.persistence import semilla
 from sazon_urbano.infrastructure.persistence.base_datos import crear_engine, crear_session_factory, crear_tablas
@@ -38,6 +38,7 @@ def crear_app(url_bd: str | None = None, sembrar: bool | None = None) -> FastAPI
     app = FastAPI(title="Sazón Urbano API", version="1.0.0", description=DESCRIPCION)
     app.state.engine, app.state.session_factory = engine, factory
     app.state.paquete = PaquetePia()  # datos de prueba del PIA, solo lectura
+    app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
     registrar_manejadores(app)
     app.include_router(router)
     return app
